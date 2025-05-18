@@ -4,10 +4,15 @@ from dataclasses import dataclass
 from config import settings
 
 @dataclass
+class KeywordDetail:
+    explanation: str
+    example: str
+
+@dataclass
 class SummaryResult:
     summary: str
     keywords: List[str]
-    keyword_explanations: dict[str, str]
+    keyword_details: dict[str, KeywordDetail]
 
 class Summarizer(Protocol):
     def summarize(self, text: str) -> SummaryResult:
@@ -15,7 +20,7 @@ class Summarizer(Protocol):
 
 class GPTNewsSummarizer:
     def __init__(self, api_key: str = settings.OPENAI_API_KEY):
-        self.client = openai.OpenAI(api_key=api_key)
+        openai.api_key = api_key
     
     def summarize(self, text: str) -> SummaryResult:
         prompt = f"""
@@ -26,25 +31,25 @@ class GPTNewsSummarizer:
         다음 형식으로 응답해주세요:
         1. 200자 이내의 요약
         2. 중요한 키워드 5개
-        3. 각 키워드에 대한 간단한 설명
+        3. 각 키워드에 대해 '설명'과 '예문'을 생성
         
         형식:
         요약: [요약문]
         키워드: [키워드1, 키워드2, ...]
-        설명: 
-        - 키워드1: [설명]
-        - 키워드2: [설명]
+        단어설명:
+        - 키워드1: 설명: [설명] / 예문: [예문]
+        - 키워드2: 설명: [설명] / 예문: [예문]
         ...
         """
         
-        response = self.client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful news summarizer."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=500
+            max_tokens=700
         )
         
         result = response.choices[0].message.content
@@ -53,22 +58,29 @@ class GPTNewsSummarizer:
         lines = result.split('\n')
         summary = ""
         keywords = []
-        explanations = {}
+        keyword_details = {}
         
-        current_section = ""
         for line in lines:
             if line.startswith("요약:"):
                 summary = line.replace("요약:", "").strip()
             elif line.startswith("키워드:"):
                 keywords = [k.strip() for k in line.replace("키워드:", "").strip("[]").split(",")]
             elif line.startswith("- "):
-                key, explanation = line.replace("- ", "").split(":", 1)
-                explanations[key.strip()] = explanation.strip()
+                # - 키워드: 설명: ... / 예문: ...
+                try:
+                    key, rest = line[2:].split(": 설명:", 1)
+                    explanation, example = rest.split("/ 예문:")
+                    keyword_details[key.strip()] = KeywordDetail(
+                        explanation=explanation.strip(),
+                        example=example.strip()
+                    )
+                except Exception:
+                    continue
         
         return SummaryResult(
             summary=summary,
             keywords=keywords,
-            keyword_explanations=explanations
+            keyword_details=keyword_details
         )
 
 # 사용 예시
@@ -83,4 +95,6 @@ if __name__ == "__main__":
     print(f"요약: {result.summary}")
     print("\n키워드:")
     for keyword in result.keywords:
-        print(f"- {keyword}: {result.keyword_explanations.get(keyword, '')}") 
+        detail = result.keyword_details.get(keyword)
+        if detail:
+            print(f"- {keyword}: {detail.explanation} 예) {detail.example}") 

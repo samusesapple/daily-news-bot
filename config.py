@@ -7,7 +7,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     
     # 카카오톡 API 설정
-    KAKAO_API_KEY: Optional[str] = None
+    KAKAO_REST_API_KEY: Optional[str] = None
+    KAKAO_REDIRECT_URI: Optional[str] = None
+    MY_KAKAO_UUID: Optional[str] = None
+    MY_KAKAO_ACCESS_TOKEN: Optional[str] = None
     
     # 데이터베이스 설정
     DATABASE_URL: str = "sqlite:///./news_bot.db"

@@ -47,7 +47,7 @@ pip install -r requirements.txt
 
 ```
 OPENAI_API_KEY=your_openai_api_key
-KAKAO_API_KEY=your_kakao_api_key
+KAKAO_REST_API_KEY=your_kakao_rest_api_key
 DATABASE_URL=sqlite:///./news_bot.db
 ```
 

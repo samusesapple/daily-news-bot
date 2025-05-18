@@ -2,7 +2,7 @@ from typing import List
 from dataclasses import dataclass
 from datetime import datetime
 from crawler.naver_ranking_crawler import NewsArticle
-from summaries.news_summarizer import SummaryResult
+from summaries.news_summarizer import SummaryResult, KeywordDetail
 
 @dataclass
 class FormattedMessage:
@@ -25,15 +25,16 @@ class MessageFormatter:
         content_parts = []
         
         for i, (article, summary) in enumerate(zip(articles, summaries), 1):
-            content_parts.append(f"{i}. {article.title}")
+            content_parts.append(f"📰 {article.title}")
             content_parts.append(f"👉 요약: {summary.summary}")
             content_parts.append(f"🔗 {article.link}")
             
             if summary.keywords:
-                content_parts.append("\n📘 오늘의 단어:")
+                content_parts.append("\n📘 오늘의 단어")
                 for keyword in summary.keywords[:3]:  # 상위 3개 키워드만 표시
-                    explanation = summary.keyword_explanations.get(keyword, "")
-                    content_parts.append(f"- '{keyword}': {explanation}")
+                    detail: KeywordDetail = summary.keyword_details.get(keyword)
+                    if detail:
+                        content_parts.append(f"- {keyword}: {detail.explanation} 예) {detail.example}")
             
             content_parts.append("---")
         
@@ -48,7 +49,7 @@ class MessageFormatter:
 # 사용 예시
 if __name__ == "__main__":
     from crawler.naver_ranking_crawler import NewsArticle
-    from summaries.news_summarizer import SummaryResult
+    from summaries.news_summarizer import SummaryResult, KeywordDetail
     
     # 테스트 데이터
     test_articles = [
@@ -63,10 +64,19 @@ if __name__ == "__main__":
         SummaryResult(
             summary="전세보증금 피해가 반복되고 있으며, 정부의 대책이 시급한 상황입니다.",
             keywords=["전세보증금", "피해", "대책"],
-            keyword_explanations={
-                "전세보증금": "전세 계약 시 임대인이 보관하는 금액",
-                "피해": "전세보증금을 돌려받지 못하는 상황",
-                "대책": "정부의 전세 피해 방지 정책"
+            keyword_details={
+                "전세보증금": KeywordDetail(
+                    explanation="전세 계약 시 임대인이 보관하는 금액",
+                    example="전세보증금을 돌려받지 못했다."
+                ),
+                "피해": KeywordDetail(
+                    explanation="전세보증금을 돌려받지 못하는 상황",
+                    example="피해자가 속출하고 있다."
+                ),
+                "대책": KeywordDetail(
+                    explanation="정부의 전세 피해 방지 정책",
+                    example="정부가 대책을 발표했다."
+                )
             }
         )
     ]
