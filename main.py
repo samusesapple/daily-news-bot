@@ -8,6 +8,7 @@ import asyncio
 import openai
 from config import settings
 from typing import Optional
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 # 통합 테스트: 뉴스 크롤링 → 본문 추출 → 요약/단어설명+예문 → 메시지 포맷 → 카카오톡 발송
 
@@ -42,4 +43,10 @@ def main():
         asyncio.run(send())
 
 if __name__ == "__main__":
-    main() 
+    scheduler = BlockingScheduler()
+    scheduler.add_job(main, 'cron', hour=8, minute=0)
+    print("[스케줄러] 매일 오전 8시에 뉴스가 자동 발송됩니다. (서버 실행 중)")
+    try:
+        scheduler.start()
+    except (KeyboardInterrupt, SystemExit):
+        print("[스케줄러] 종료됨") 
